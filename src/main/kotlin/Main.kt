@@ -6,6 +6,7 @@ import com.google.firebase.messaging.Message
 import java.io.FileInputStream
 import kotlin.random.Random
 
+const val COUNT_REPLICATION = 10
 const val TOTAL_COUNT_CHANCE_POINT: Int = 100
 const val CHANCE_POINT_OF_ERROR: Int = 10
 const val DEFAULT_TEXT_POST_MESSAGE: String =
@@ -17,6 +18,8 @@ fun setTextPost(text: String?): String = if (text.isNullOrBlank()) DEFAULT_TEXT_
 enum class Action {
     LIKE,
     SEND_POST,
+
+    //Place for action
     MAGIC_ACTION
 }
 
@@ -35,17 +38,18 @@ fun main() {
         .build()
 
     FirebaseApp.initializeApp(options)
-
-    FirebaseMessaging.getInstance().send(generateMessage(token))
+    for (i in 1..COUNT_REPLICATION) {
+        FirebaseMessaging.getInstance().send(generateMessage(token))
+    }
 }
 
 fun generateMessage(token: String): Message = Message.builder()
     .putData("action", "${rollAction()}")
     .putData(
         "content", """{
-                "userId": ${Random.nextInt(1000)},
+                "userId": ${Random.nextInt(Integer.MAX_VALUE)},
                 "userName": ${UserName.values()[Random.nextInt(UserName.values().count())]},
-                "postId": ${Random.nextInt(1000)},
+                "postId": ${Random.nextInt(Integer.MAX_VALUE)},
                 "postTitle": ${UserName.values()[Random.nextInt(UserName.values().count())]},
                 "textPost": "${setTextPost(yourTextPostMessage)}"
                 }""".trimIndent()
@@ -53,11 +57,10 @@ fun generateMessage(token: String): Message = Message.builder()
     .setToken(token)
     .build()
 
-fun rollAction() = when (1 + Random.nextInt(100)) {
-    in 0..(TOTAL_COUNT_CHANCE_POINT - CHANCE_POINT_OF_ERROR) / (Action.values().count() - 1) -> Action.LIKE
-    in (TOTAL_COUNT_CHANCE_POINT - CHANCE_POINT_OF_ERROR) /
-            (Action.values().count() - 1) + 1..(TOTAL_COUNT_CHANCE_POINT - CHANCE_POINT_OF_ERROR) -> Action.SEND_POST
+fun rollAction() = Action.values()[
+        (1 + Random.nextInt(TOTAL_COUNT_CHANCE_POINT)) /
+                ((TOTAL_COUNT_CHANCE_POINT - CHANCE_POINT_OF_ERROR) / (Action.values().count() - 1))
+]
 
-    else -> Action.MAGIC_ACTION
-}
+
 
